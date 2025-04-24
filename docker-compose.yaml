@@ -1,12 +1,14 @@
-
 services:
   webserver:
     build:
       context: .
-      dockerfile: Dockerfile_django
+      dockerfile: dockerfile_django
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+      gunicorn golden_hex_django_app.wsgi:application --bind 0.0.0.0:8000"
     volumes: 
-      - ./static:/golden_hex_django/myapp/static
-    container_name: django_app
+      - static_volume:/golden_hex_django/staticfiles
+    container_name: django_server
     ports:
       - "8000:8000"
     restart: always
@@ -14,14 +16,17 @@ services:
   proxy_server:
     build:
       context: .
-      dockerfile: Dockerfile_nginx
+      dockerfile: dockerfile_nginx
     container_name: nginx_proxy
     volumes:
-      - ./default.conf:/etc/nginx/conf.d/default.conf
-      - ./golden_hex_django/staticfiles:/test_golden_hex_django/golden_hex_django/staticfiles:ro
+      - static_volume:/golden_hex_django/staticfiles
     ports:
       - "8080:80"
     depends_on:
       - webserver
     restart: always
+
+
+volumes:
+  static_volume:
 
